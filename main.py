@@ -12,8 +12,11 @@ import cv2 as cv
 # image_undistorter()
 # stereo_fusion()
 
-image_dir = r'/Users/ludvig/Documents/SSY226 Design project in MPSYS/Image-stitching-with-COLMAP/COLMAP_w_CUDA/'
+# image_dir = r'/Users/ludvig/Documents/SSY226 Design project in MPSYS/Image-stitching-with-COLMAP/COLMAP_w_CUDA/'
+image_dir = r'/home/r09521612/stitching/RCB2_S1_0416_01/AIDT-colmap/'
 cameras, points3D, images = get_data_from_binary(image_dir)
+print(cameras)
+print(images)
 coordinates = []
 for key in points3D:
     coordinates.append(points3D[key].xyz)
@@ -29,25 +32,37 @@ imgs = {}
 #image_dir = '../COLMAP_w_CUDA/images/'
 # image_dir = '../COLMAP_w_CUDA/dense/0/images/'
 
-maps = compute_all_maps(r'/Users/ludvig/Documents/SSY226 Design project in MPSYS/Image-stitching-with-COLMAP/COLMAP_w_CUDA/', full_size_img=False)
+# maps = compute_all_maps(image_dir, full_size_img=False)
+
+real_image_dir = r'/home/r09521612/stitching/RCB2_S1_0416_01/Raw/'
 
 # Rearrange COLMAP data
 for key in images.keys():
-    print('cameraid, name', images[key].camera_id, cameras[key].id)
-    imgs[images[key].camera_id] = np.asarray(plt.imread(image_dir+"images/" + images[key].name))
+    # print('cameraid, name', images[key].camera_id, cameras[key].id)
+    print('imageid, cameraid', key, images[key].camera_id)
+    # imgs[images[key].camera_id] = np.asarray(plt.imread(image_dir+"images/" + images[key].name))
+    imgs[key] = np.asarray(plt.imread(real_image_dir + images[key].name))
 
-    map_x, map_y = maps[key]
-    imgs[images[key].camera_id] = cv.remap(imgs[images[key].camera_id], map_x, map_y, cv.INTER_LANCZOS4)
+    # map_x, map_y = maps[key]
+    # imgs[images[key].camera_id] = cv.remap(imgs[images[key].camera_id], map_x, map_y, cv.INTER_LANCZOS4)
+    # imgs[key] = cv.remap(imgs[key], map_x, map_y, cv.INTER_LANCZOS4)
 
-    all_camera_matrices[images[key].camera_id] = camera_quat_to_P(images[key].qvec, images[key].tvec)
-    camera_intrinsics[cameras[key].id] = cameras[key]
+    # all_camera_matrices[images[key].camera_id] = camera_quat_to_P(images[key].qvec, images[key].tvec)
+    all_camera_matrices[key] = camera_quat_to_P(images[key].qvec, images[key].tvec)
+    # camera_intrinsics[cameras[key].id] = cameras[key]
+    camera_intrinsics[images[key].camera_id] = cameras[images[key].camera_id]
 
 # VIRTUAL CAMERA WITH MEAN CENTER OF OTHER CAMERAS AND PRINCIPAL AXIS AS PLANE NORMAL
 Pv = create_virtual_camera(all_camera_matrices,plane)
-w = 500
-h = 500
-f = 250
+# w = 500
+# h = 500
+# f = 250
+w = 5000
+h = 5000
+f = 1000
 K_virt = np.asarray([[f, 0, w/2],[0, f, h/2],[0, 0, 1]])
+# f, cx, cy, _ = cameras[1].params
+# K_virt = np.asarray([[f, 0, cx],[0, f, cy],[0, 0, 1]])
 
 
 # TEST WITH EXISTING CAMERA
@@ -62,14 +77,15 @@ H = {}
 P_real_new = {}
 #
 for key in all_camera_matrices:
-    print('Key vs cam id', key, camera_intrinsics[key].id)
-    K_temp, dist_temp = build_intrinsic_matrix(camera_intrinsics[key])
+    # print('Key vs cam id', key, camera_intrinsics[key].id)
+    K_temp, dist_temp = build_intrinsic_matrix(camera_intrinsics[1])
     H[key],plane_new,P_real_new[key],P_virt_trans = compute_homography(Pv, all_camera_matrices[key]['P'], K_virt, K_temp, plane)
 
 print('HOMO',H)# color image
 color_images, stitched_image = color_virtual_image(plane, Pv, w, h, imgs, all_camera_matrices, camera_intrinsics, K_virt,'homography',H)
 stitched_image = stitched_image/255
 imgplot = plt.imshow(stitched_image)
+plt.imsave('stitched_image1.jpg', stitched_image)
 plt3d = plot_3D(points3D,plane,all_camera_matrices,Pv)
 
 
@@ -99,4 +115,4 @@ for key in P_real_new:
 # cam_center, principal_axis = get_camera_center_and_axis(Pv)
 # plt3d.quiver(cam_center[0],cam_center[1],cam_center[2], principal_axis[0,0], principal_axis[0,1], principal_axis[0,2], length=distance, color='Red')
 plt.show()
-
+plt.savefig('result1.jpg')

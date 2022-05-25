@@ -74,13 +74,18 @@ def compute_all_maps(image_dir, k_list=None, full_size_img=True):
     map_num = 1
     maps = {}
 
-    for cam_key in cameras.keys():
-        print("Constructing map " + str(map_num) + "/4...")
-        cam_id = cameras[cam_key].id
-        params = cameras[cam_key].params
-        for img_key in images.keys():
-            if images[img_key].camera_id == cam_id:
-                break  # this will make img_key to be set correctly for maps indexing
+    cam_id = cameras[1].id
+    params = cameras[1].params
+    img_size = (cameras[1].height, cameras[1].width)
+
+    # for cam_key in cameras.keys():
+    for img_key in images.keys():
+        print("Constructing map " + str(map_num) + "...")
+        # cam_id = cameras[cam_key].id
+        # params = cameras[cam_key].params
+        # for img_key in images.keys():
+        #     if images[img_key].camera_id == cam_id:
+        #         break  # this will make img_key to be set correctly for maps indexing
 
         f, cx, cy, _ = params
         K = np.array(([f, 0., cx],
@@ -88,7 +93,7 @@ def compute_all_maps(image_dir, k_list=None, full_size_img=True):
                       [0, 0, 1]))
         k = k_list[map_num-1]
 
-        img_size = (720, 1280)
+        # img_size = (720, 1280)
         margin = (250, 150)
         maps[img_key] = generate_map(K, k, img_size, margin, full_size_img)
 

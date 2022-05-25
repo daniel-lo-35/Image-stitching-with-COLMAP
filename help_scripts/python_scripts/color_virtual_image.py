@@ -104,9 +104,11 @@ def color_virtual_image(plane,Pvirtual,w_virtual,h_virtual,images,cams,intrinsic
         dist = {}
         w_real = {}
         h_real = {}
-        for key in range(1,5):
+        # for key in range(1,5):
+        for key in images:
             color_images[key] = np.zeros((h_virtual, w_virtual, 3))
-            Ktemp, disttemp = COLMAP_functions.build_intrinsic_matrix(intrinsics[key])
+            # Ktemp, disttemp = COLMAP_functions.build_intrinsic_matrix(intrinsics[key])
+            Ktemp, disttemp = COLMAP_functions.build_intrinsic_matrix(intrinsics[1])
             K[key] = Ktemp
             dist[key] = disttemp
             w_real[key] = len(images[key][0,:,0])
@@ -115,7 +117,8 @@ def color_virtual_image(plane,Pvirtual,w_virtual,h_virtual,images,cams,intrinsic
         for y in range(0, h_virtual):
             print('Loop is on: ', y)
             for x in range(0, w_virtual):
-                for index in range(1,5):
+                # for index in range(1,5):
+                for index in images:
                     pixel = [x, y, 1]
                     pixel_norm = np.matmul(np.linalg.inv(K_virt),np.asarray(pixel))
                     image_point = np.matmul(H[index], pixel_norm)
@@ -131,6 +134,7 @@ def color_virtual_image(plane,Pvirtual,w_virtual,h_virtual,images,cams,intrinsic
                     else:
                         color_images[index][y, x, :3] = images[index][pix_y, pix_x,:3]
                         stitched_image[y, x, :3] = color_images[index][y, x, :3]
+                        break
         return color_images, stitched_image
 
     else:
@@ -174,11 +178,16 @@ def create_virtual_camera(camera_matrices,plane):
     for index,cam in enumerate(camera_matrices):
         cam_center, principal_axis = estimate_plane.get_camera_center_and_axis(camera_matrices[cam]['P'])
         centers[index] = cam_center
+        if index == 0:
+            virt_center = cam_center
+        else:
+            virt_center += cam_center
         axes[index] = principal_axis
-    virt_center = (centers[0]+centers[1]+centers[2]+centers[3])/4
+    # virt_center = (centers[0]+centers[1]+centers[2]+centers[3])/4
+    virt_center /= len(camera_matrices)
 
     plane = plane/plane[3]
-    virt_principal_axis = np.asarray([plane[0],plane[1],plane[2]],dtype='float')/np.linalg.norm([plane[0],plane[1],plane[2]])#(axes[0]+axes[1]+axes[2]+axes[3])/4
+    virt_principal_axis = np.asarray([plane[0],plane[1],plane[2]],dtype='float')/np.linalg.norm([plane[0],plane[1],plane[2]]) #(axes[0]+axes[1]+axes[2]+axes[3])/4 #np.mean(list(axes.values()))
 
     virt_principal_axis = -virt_principal_axis
     x = np.array([1, 0, 0])
