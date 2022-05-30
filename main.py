@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import os
 import cv2 as cv
 
+import multiprocessing as mp
+print('CPU count: ', mp.cpu_count())
+
 # Perform the reconstruction to get data
 #automatic_reconstructor()
 # image_undistorter()
@@ -57,13 +60,17 @@ Pv = create_virtual_camera(all_camera_matrices,plane)
 # w = 500
 # h = 500
 # f = 250
-w = 5000
-h = 5000
+w = 4000
+h = 4000
 f = 1000
 K_virt = np.asarray([[f, 0, w/2],[0, f, h/2],[0, 0, 1]])
 # f, cx, cy, _ = cameras[1].params
 # K_virt = np.asarray([[f, 0, cx],[0, f, cy],[0, 0, 1]])
 
+print('##### Virtual Camera #####')
+print('Pv:', Pv)
+print('K_virt:', K_virt)
+print()
 
 # TEST WITH EXISTING CAMERA
 # K_temp, dist_temp = build_intrinsic_matrix(camera_intrinsics[1])
@@ -76,16 +83,21 @@ K_virt = np.asarray([[f, 0, w/2],[0, f, h/2],[0, 0, 1]])
 H = {}
 P_real_new = {}
 #
+
+K_temp, dist_temp = build_intrinsic_matrix(camera_intrinsics[1])
 for key in all_camera_matrices:
     # print('Key vs cam id', key, camera_intrinsics[key].id)
-    K_temp, dist_temp = build_intrinsic_matrix(camera_intrinsics[1])
+    # K_temp, dist_temp = build_intrinsic_matrix(camera_intrinsics[1])
     H[key],plane_new,P_real_new[key],P_virt_trans = compute_homography(Pv, all_camera_matrices[key]['P'], K_virt, K_temp, plane)
 
 print('HOMO',H)# color image
-color_images, stitched_image = color_virtual_image(plane, Pv, w, h, imgs, all_camera_matrices, camera_intrinsics, K_virt,'homography',H)
+# color_images, stitched_image = color_virtual_image(plane, Pv, w, h, imgs, all_camera_matrices, camera_intrinsics, K_virt,'homography',H)
+stitched_image = color_virtual_image(plane, Pv, w, h, imgs, all_camera_matrices, camera_intrinsics, K_virt,'homography',H)
+print('stitched_image:', stitched_image)
+print('shape of stitched image:', stitched_image.shape)
 stitched_image = stitched_image/255
 imgplot = plt.imshow(stitched_image)
-plt.imsave('stitched_image1.jpg', stitched_image)
+plt.imsave('stitched_image3.jpg', stitched_image)
 plt3d = plot_3D(points3D,plane,all_camera_matrices,Pv)
 
 
@@ -115,4 +127,4 @@ for key in P_real_new:
 # cam_center, principal_axis = get_camera_center_and_axis(Pv)
 # plt3d.quiver(cam_center[0],cam_center[1],cam_center[2], principal_axis[0,0], principal_axis[0,1], principal_axis[0,2], length=distance, color='Red')
 plt.show()
-plt.savefig('result1.jpg')
+plt.savefig('result3.jpg')
