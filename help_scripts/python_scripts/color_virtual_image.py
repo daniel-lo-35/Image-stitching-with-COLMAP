@@ -83,7 +83,7 @@ def get_color_for_virtual_pixel(images,Pvirtual,pixelpoint,plane, cams,intrinsic
     color = get_color_for_3Dpoint_in_plane(plane_point, cams, images,w_virtual,h_virtual, intrinsics)
     return color
 
-def color_virtual_image(plane,Pvirtual,w_virtual,h_virtual,images,cams,intrinsics,K_virt,decision_variable,H):
+def color_virtual_image(plane,Pvirtual,w_virtual,h_virtual,images,cams,intrinsics,K_virt,decision_variable,H,skip=False):
     if decision_variable == 'ray_tracing':
         # color_images = {}
         # for key in images:
@@ -104,22 +104,22 @@ def color_virtual_image(plane,Pvirtual,w_virtual,h_virtual,images,cams,intrinsic
     elif decision_variable == 'homography':
         # stitched_image = np.zeros((h_virtual, w_virtual, 3))
         # color_images = {}
-        # K = {}
-        # dist = {}
-        # w_real = {}
-        # h_real = {}
-        K, dist = COLMAP_functions.build_intrinsic_matrix(intrinsics[1])
-        w_real = len(images[1][0, :, 0])
-        h_real = len(images[1][:, 0, 0])
+        K = {}
+        dist = {}
+        w_real = {}
+        h_real = {}
+        # K, dist = COLMAP_functions.build_intrinsic_matrix(intrinsics[1])
+        # w_real = len(images[1][0, :, 0])
+        # h_real = len(images[1][:, 0, 0])
         # for key in range(1,5):
-        # for key in images:
+        for key in images:
             # color_images[key] = np.zeros((h_virtual, w_virtual, 3))
-            # Ktemp, disttemp = COLMAP_functions.build_intrinsic_matrix(intrinsics[key])
+            Ktemp, disttemp = COLMAP_functions.build_intrinsic_matrix(intrinsics[key])
             # Ktemp, disttemp = COLMAP_functions.build_intrinsic_matrix(intrinsics[1])
-            # K[key] = Ktemp
-            # dist[key] = disttemp
-            # w_real[key] = len(images[key][0,:,0])
-            # h_real[key] = len(images[key][:, 0, 0])
+            K[key] = Ktemp
+            dist[key] = disttemp
+            w_real[key] = len(images[key][0,:,0])
+            h_real[key] = len(images[key][:, 0, 0])
 
         # pool = mp.Pool(mp.cpu_count())
         # n_cpu = mp.cpu_count()
@@ -128,7 +128,7 @@ def color_virtual_image(plane,Pvirtual,w_virtual,h_virtual,images,cams,intrinsic
         y = range(0, h_virtual)
         x = range(0, w_virtual)
         # stitched_image = np.asarray(pool.starmap(_color_virtual_image, zip(product(y, x), [images]*h_virtual*w_virtual, [K_virt]*h_virtual*w_virtual, [H]*h_virtual*w_virtual, [K]*h_virtual*w_virtual, [w_real]*h_virtual*w_virtual, [h_real]*h_virtual*w_virtual))).reshape((h_virtual, w_virtual, 3))
-        stitched_image = np.asarray(Parallel(n_jobs=n_cpu)(delayed(_color_virtual_image)(b, a, images, K_virt, H, K, w_real, h_real) for b in y for a in x)).reshape((h_virtual, w_virtual, 3))
+        stitched_image = np.asarray(Parallel(n_jobs=n_cpu)(delayed(_color_virtual_image)(b, a, images, K_virt, H, K, w_real, h_real, skip) for b in y for a in x)).reshape((h_virtual, w_virtual, 3))
 
         # for y in range(0, h_virtual):
         #     print('Loop is on: ', y)
@@ -162,20 +162,23 @@ def color_virtual_image(plane,Pvirtual,w_virtual,h_virtual,images,cams,intrinsic
     else:
         print('A decision variable with either "ray_tracing" or "homography" must be passed as argument.')
 
-def _color_virtual_image(y, x, images, K_virt, H, K, w_real, h_real):
+def _color_virtual_image(y, x, images, K_virt, H, K, w_real, h_real, skip=False):
     # y, x = pixel
-    for index in range(len(images), 0, -1): # Reverse image feed order to try if the result is better looking. TODO: remove unwanted images from the dict
+    for index in images:    # NOTE: Using range can meet problems when not image id is randomized.
+    # for index in range(len(images), 0, -1):     # Reverse image feed order to try if the result is better looking. (### See NOTE above ###)
+        if skip and index % 10:
+            continue
         pixel_norm = np.matmul(np.linalg.inv(K_virt),np.asarray([x, y, 1]))
         image_point = np.matmul(H[index], pixel_norm)
         image_point = image_point / image_point[-1]
-        # image_point = np.matmul(K[index],image_point)
-        image_point = np.matmul(K, image_point)
+        image_point = np.matmul(K[index],image_point)
+        # image_point = np.matmul(K, image_point)
 
         pix_x = int(image_point[0])
         pix_y = int(image_point[1])
 
-        # if pix_x >= w_real[key] or pix_x < 0 or pix_y >= h_real[key] or pix_y < 0:
-        if pix_x >= w_real or pix_x < 0 or pix_y >= h_real or pix_y < 0:
+        if pix_x >= w_real[index] or pix_x < 0 or pix_y >= h_real[index] or pix_y < 0:
+        # if pix_x >= w_real or pix_x < 0 or pix_y >= h_real or pix_y < 0:
             pass
         else:
             return images[index][pix_y, pix_x,:3]

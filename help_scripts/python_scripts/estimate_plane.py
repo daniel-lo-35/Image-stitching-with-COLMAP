@@ -84,13 +84,14 @@ def ransac_find_plane(pts, threshold):
                 # Commenting these out as we're not really in a hurry -> take time to find best plane
                 epsilon = inliers / N
                 kmax = math.log(mismatch_prob) / math.log(1 - math.pow(epsilon, 3))
-        else:
+        # else:
             # If best case found(outliers=0), return immediately
-            print('# of outliers !> 0. (THIS CASE HAS NOT YET BEEN TESTED)\nIF THIS SHOWS; SOMETHING IS LIKELY WRONG')
-            plane = plane_prel
-            min_outliers = outliers
-            print('Total # of iterations was ' + str(k) + ' with 0% outliers.')
-            return plane, min_outliers
+            # NOTE THIS CASE IS MOST PROBABLY BUGGED, SO I'LL JUST SKIP IT
+            # print('# of outliers !> 0. (THIS CASE HAS NOT YET BEEN TESTED)\nIF THIS SHOWS; SOMETHING IS LIKELY WRONG')
+            # plane = plane_prel
+            # min_outliers = outliers
+            # print('Total # of iterations was ' + str(k) + ' with 0% outliers.')
+            # return plane, min_outliers
 
         print("", end="\r")
         print("{:.2f} % done.".format(100 * (k + 1) / kmax), end="")
