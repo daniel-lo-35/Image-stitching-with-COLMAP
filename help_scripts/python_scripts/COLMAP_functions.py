@@ -65,10 +65,17 @@ def build_intrinsic_matrix(camera):
         dist_params = [params[3],0]
     elif camera.model == 'PINHOLE':
         params = camera.params
+        # K = [fx, 0, cx;
+        #      0, fy, cy;
+        #      0, 0, 1];
+        K = np.asarray([[params[0], 0, params[2]], [0, params[1], params[3]], [0, 0, 1]])
+        dist_params = [0, 0]
+    elif camera.model == 'SIMPLE_PINHOLE':
+        params = camera.params
         # K = [f, 0, cx;
         #      0, f, cy;
         #      0, 0, 1];
-        K = np.asarray([[params[0], 0, params[2]], [0, params[1], params[3]], [0, 0, 1]])
+        K = np.asarray([[params[0], 0, params[1]],[0, params[0], params[2]],[0, 0, 1]])
         dist_params = [0, 0]
     else:
         K = 1

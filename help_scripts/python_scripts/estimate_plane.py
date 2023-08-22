@@ -86,7 +86,7 @@ def ransac_find_plane(pts, threshold):
                 kmax = math.log(mismatch_prob) / math.log(1 - math.pow(epsilon, 3))
         # else:
             # If best case found(outliers=0), return immediately
-            # NOTE THIS CASE IS MOST PROBABLY BUGGED, SO I'LL JUST SKIP IT
+            # NOTE: THIS CASE IS MOST PROBABLY BUGGED, SO I'LL JUST SKIP IT
             # print('# of outliers !> 0. (THIS CASE HAS NOT YET BEEN TESTED)\nIF THIS SHOWS; SOMETHING IS LIKELY WRONG')
             # plane = plane_prel
             # min_outliers = outliers
